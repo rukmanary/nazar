@@ -27,9 +27,9 @@ export const Colors = {
 
 export const GradientColors = {
   light: {
-    loginBackgournd: ["#ffffff", "#CED7DB"],
+    loginBackground: ["#ffffff", "#CED7DB"],
   },
   dark: {
-    loginBackgournd: ["#ffffff", "#0A2733"],
+    loginBackground: ["#ffffff", "#0A2733"],
   },
 } as const;
