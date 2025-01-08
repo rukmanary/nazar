@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
-  View,
+  // View,
   Text,
   TextInput,
   Button,
@@ -15,27 +15,30 @@ import {
   signInWithEmailAndPassword,
   GoogleAuthProvider,
   signInWithCredential,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
+  // RecaptchaVerifier,
+  // signInWithPhoneNumber,
 } from "firebase/auth";
 import { auth } from "../../firebaseConfig";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { NAZAR_LOGO } from "@/assets";
 import { GradientColors } from "@/constants/Colors";
+import { ThemedText } from "@/components/ThemedText";
+import { ThemedButton } from "@/components/ThemedButton";
 
 WebBrowser.maybeCompleteAuthSession();
 
 const LoginScreen = () => {
   const router = useRouter();
   const theme = useColorScheme() ?? "light";
-  const bgColor = GradientColors[theme].loginBackgournd;
+  const bgColor = GradientColors[theme].loginBackground;
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
-  const [verificationId, setVerificationId] = useState("");
+  // const [phone, setPhone] = useState("");
+  // const [otp, setOtp] = useState("");
+  // const [verificationId, setVerificationId] = useState("");
 
   const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
     clientId: process.env.EXPO_PUBLIC_CLIENT_ID,
@@ -75,36 +78,36 @@ const LoginScreen = () => {
   };
 
   // Login dengan Nomor HP (mengirim OTP)
-  const handlePhoneLogin = () => {
-    const appVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
-      size: "invisible",
-    });
+  // const handlePhoneLogin = () => {
+  //   const appVerifier = new RecaptchaVerifier(auth, "recaptcha-container", {
+  //     size: "invisible",
+  //   });
 
-    signInWithPhoneNumber(auth, phone, appVerifier)
-      .then((confirmationResult) => {
-        setVerificationId(confirmationResult.verificationId);
-        Alert.alert("OTP Sent", "Check your phone for the OTP.");
-      })
-      .catch((error) => {
-        Alert.alert("Login Failed", error.message);
-      });
-  };
+  //   signInWithPhoneNumber(auth, phone, appVerifier)
+  //     .then((confirmationResult) => {
+  //       setVerificationId(confirmationResult.verificationId);
+  //       Alert.alert("OTP Sent", "Check your phone for the OTP.");
+  //     })
+  //     .catch((error) => {
+  //       Alert.alert("Login Failed", error.message);
+  //     });
+  // };
 
   // Verifikasi OTP
-  const handleVerifyOtp = () => {
-    const credential = GoogleAuthProvider.credential(verificationId, otp);
-    signInWithCredential(auth, credential)
-      .then((userCredential) => {
-        Alert.alert(
-          "Login Success",
-          `Welcome ${userCredential.user.phoneNumber}`
-        );
-        router.push("/");
-      })
-      .catch((error) => {
-        Alert.alert("Verification Failed", error.message);
-      });
-  };
+  // const handleVerifyOtp = () => {
+  //   const credential = GoogleAuthProvider.credential(verificationId, otp);
+  //   signInWithCredential(auth, credential)
+  //     .then((userCredential) => {
+  //       Alert.alert(
+  //         "Login Success",
+  //         `Welcome ${userCredential.user.phoneNumber}`
+  //       );
+  //       router.push("/");
+  //     })
+  //     .catch((error) => {
+  //       Alert.alert("Verification Failed", error.message);
+  //     });
+  // };
 
   return (
     <LinearGradient colors={bgColor} style={styles.container}>
@@ -124,7 +127,23 @@ const LoginScreen = () => {
         onChangeText={setPassword}
         secureTextEntry
       />
-      <Button title="Login" onPress={handleEmailLogin} />
+
+      <ThemedButton
+        useGradient
+        gradientLightColor={["#FFFFFF", "#bcf7f7"]}
+        gradientDarkColor={["#000000", "#252525"]}
+        gradientContainerStyle={{
+          minWidth: 100,
+          justifyContent: "center",
+          alignItems: "center",
+          marginTop: 16,
+        }}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        onPress={handleEmailLogin}
+      >
+        <ThemedText type="defaultSemiBold">Login</ThemedText>
+      </ThemedButton>
 
       {/* Login dengan Nomor HP */}
       {/* <TextInput
@@ -143,16 +162,35 @@ const LoginScreen = () => {
       <Button title="Verify OTP" onPress={handleVerifyOtp} /> */}
 
       {/* Login dengan Google */}
-      <Button
-        title="Login with Google"
-        disabled={!request}
+      <ThemedButton
+        useGradient
+        gradientLightColor={["#FFFFFF", "#bcf7f7"]}
+        gradientDarkColor={["#000000", "#252525"]}
+        gradientContainerStyle={{
+          minWidth: 100,
+          justifyContent: "center",
+          alignItems: "center",
+          marginTop: 16,
+        }}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
         onPress={() => promptAsync()}
-      />
+        style={{ flexDirection: "row", alignItems: "center" }}
+      >
+        <Ionicons name="logo-google" size={16} />
+        <ThemedText style={{ marginLeft: 8 }} type="defaultSemiBold">
+          Login with Google
+        </ThemedText>
+      </ThemedButton>
 
       {/* Link ke Halaman Register */}
-      <Text onPress={() => router.push("/signup")} style={styles.link}>
+      <ThemedText
+        type="link"
+        onPress={() => router.push("/signup")}
+        style={styles.link}
+      >
         Don't have an account? Register here.
-      </Text>
+      </ThemedText>
     </LinearGradient>
   );
 };
@@ -179,7 +217,6 @@ const styles = StyleSheet.create({
   },
   link: {
     marginTop: 20,
-    color: "blue",
     textDecorationLine: "underline",
     position: "absolute",
     bottom: 20,
