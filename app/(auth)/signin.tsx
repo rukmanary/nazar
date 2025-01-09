@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  // View,
   Text,
   TextInput,
   Button,
@@ -8,6 +7,9 @@ import {
   Alert,
   Image,
   useColorScheme,
+  View,
+  Keyboard,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
@@ -31,6 +33,9 @@ WebBrowser.maybeCompleteAuthSession();
 
 const LoginScreen = () => {
   const router = useRouter();
+  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
+    clientId: process.env.EXPO_PUBLIC_CLIENT_ID,
+  });
   const theme = useColorScheme() ?? "light";
   const bgColor = GradientColors[theme].loginBackground;
 
@@ -39,10 +44,22 @@ const LoginScreen = () => {
   // const [phone, setPhone] = useState("");
   // const [otp, setOtp] = useState("");
   // const [verificationId, setVerificationId] = useState("");
+  const [isKeyboardShown, setIsKeyboardShown] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [request, response, promptAsync] = Google.useIdTokenAuthRequest({
-    clientId: process.env.EXPO_PUBLIC_CLIENT_ID,
-  });
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener("keyboardDidShow", () => {
+      setIsKeyboardShown(true);
+    });
+    const hideSubscription = Keyboard.addListener("keyboardDidHide", () => {
+      setIsKeyboardShown(false);
+    });
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [isKeyboardShown]);
 
   useEffect(() => {
     if (response?.type === "success") {
@@ -64,16 +81,14 @@ const LoginScreen = () => {
 
   // Login dengan Email/Password
   const handleEmailLogin = async () => {
+    setIsLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
+      await signInWithEmailAndPassword(auth, email, password).finally(() =>
+        setIsLoading(false)
       );
-      Alert.alert("Login Success", `Welcome ${userCredential.user.email}`);
       router.push("/");
     } catch (error: any) {
-      Alert.alert("Login Failed", error.message);
+      Alert.alert("Login Failed", "Email atau Password Salah");
     }
   };
 
@@ -111,6 +126,8 @@ const LoginScreen = () => {
 
   return (
     <LinearGradient colors={bgColor} style={styles.container}>
+      {isLoading && <ActivityIndicator size="large" style={styles.loading} />}
+
       <Image source={NAZAR_LOGO} style={{ height: 200, aspectRatio: 1 }} />
       <Text style={styles.title}>Login</Text>
       {/* Login dengan Email dan Password */}
@@ -119,6 +136,7 @@ const LoginScreen = () => {
         placeholder="Email"
         value={email}
         onChangeText={setEmail}
+        editable={!isLoading}
       />
       <TextInput
         style={styles.input}
@@ -126,6 +144,7 @@ const LoginScreen = () => {
         value={password}
         onChangeText={setPassword}
         secureTextEntry
+        editable={!isLoading}
       />
 
       <ThemedButton
@@ -141,6 +160,7 @@ const LoginScreen = () => {
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         onPress={handleEmailLogin}
+        disabled={isLoading}
       >
         <ThemedText type="defaultSemiBold">Login</ThemedText>
       </ThemedButton>
@@ -176,21 +196,23 @@ const LoginScreen = () => {
         end={{ x: 1, y: 1 }}
         onPress={() => promptAsync()}
         style={{ flexDirection: "row", alignItems: "center" }}
+        disabled={isLoading}
       >
         <Ionicons name="logo-google" size={16} />
         <ThemedText style={{ marginLeft: 8 }} type="defaultSemiBold">
           Login with Google
         </ThemedText>
       </ThemedButton>
-
-      {/* Link ke Halaman Register */}
-      <ThemedText
-        type="link"
-        onPress={() => router.push("/signup")}
-        style={styles.link}
-      >
-        Don't have an account? Register here.
-      </ThemedText>
+      {!isKeyboardShown && (
+        <ThemedText
+          type="link"
+          onPress={() => router.push("/signup")}
+          style={styles.link}
+          disabled={isLoading}
+        >
+          Don't have an account? Register here.
+        </ThemedText>
+      )}
     </LinearGradient>
   );
 };
@@ -202,6 +224,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
   },
+  loading: { position: "absolute", zIndex: 100 },
   title: {
     fontSize: 24,
     fontWeight: "bold",
