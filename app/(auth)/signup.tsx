@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  // View,
   Text,
   TextInput,
   Button,
@@ -8,6 +7,7 @@ import {
   Alert,
   useColorScheme,
   ActivityIndicator,
+  View,
 } from "react-native";
 import * as WebBrowser from "expo-web-browser";
 import * as Google from "expo-auth-session/providers/google";
@@ -18,6 +18,7 @@ import {
   GoogleAuthProvider,
   updateProfile,
   signOut,
+  validatePassword,
   // RecaptchaVerifier,
   // signInWithPhoneNumber,
 } from "firebase/auth";
@@ -28,8 +29,20 @@ import { ThemedButton } from "@/components/ThemedButton";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/ThemedText";
 import { useRouter } from "expo-router";
+import { calculatePasswordStrength } from "@/helpers/password";
+import PasswordStrengthBar from "@/components/PasswordStrengthBar";
 
 WebBrowser.maybeCompleteAuthSession();
+
+type PasswordStatus = {
+  containsLowercaseLetter: boolean | undefined;
+  containsNonAlphanumericCharacter: boolean | undefined;
+  containsNumericCharacter: boolean | undefined;
+  containsUppercaseLetter: boolean | undefined;
+  meetsMinPasswordLength: boolean | undefined;
+};
+
+type PasswordLevel = "Weak" | "Medium" | "Strong" | undefined;
 
 const SignupScreen = () => {
   // const auth = getAuth();
@@ -41,6 +54,19 @@ const SignupScreen = () => {
   // const [phone, setPhone] = useState("");
   // const [otp, setOtp] = useState("");
   // const [verificationId, setVerificationId] = useState("");
+  const [passwordStatus, setPasswordStatus] = useState<PasswordStatus>({
+    containsLowercaseLetter: false,
+    containsNonAlphanumericCharacter: false,
+    containsNumericCharacter: false,
+    containsUppercaseLetter: false,
+    meetsMinPasswordLength: false,
+  });
+  const [passwordStrengthLevel, setPasswordStrengthLevel] =
+    useState<PasswordLevel>(undefined);
+  const [passwordStrengthPercentage, setPasswordStrengPercentage] = useState(0);
+  const [passwordHasCommonPattern, setPasswordHasCommonPattern] =
+    useState(false);
+
   const theme = useColorScheme() ?? "light";
   const bgColor = GradientColors[theme].loginBackground;
 
@@ -96,6 +122,37 @@ const SignupScreen = () => {
       console.log({ error });
       Alert.alert("Error", error.message);
     }
+  };
+
+  const _validatePassword = async () => {
+    const status = await validatePassword(auth, password);
+    const {
+      isValid,
+      containsLowercaseLetter,
+      containsNonAlphanumericCharacter,
+      containsNumericCharacter,
+      containsUppercaseLetter,
+      meetsMinPasswordLength,
+    } = status;
+    console.log({ status });
+    setPasswordStatus({
+      containsLowercaseLetter,
+      containsNonAlphanumericCharacter,
+      containsNumericCharacter,
+      containsUppercaseLetter,
+      meetsMinPasswordLength,
+    });
+    const { hasCommonPatterns, level, percentage } = calculatePasswordStrength({
+      password,
+      hasLowercase: containsLowercaseLetter,
+      hasNumbers: containsNumericCharacter,
+      hasSymbols: containsNonAlphanumericCharacter,
+      hasUppercase: containsUppercaseLetter,
+    });
+
+    setPasswordStrengPercentage(percentage);
+    setPasswordStrengthLevel(level);
+    setPasswordHasCommonPattern(hasCommonPatterns);
   };
 
   // Phone Authentication: Request OTP
@@ -165,7 +222,60 @@ const SignupScreen = () => {
         secureTextEntry
         autoCapitalize="none"
         editable={!isLoading}
+        onChange={_validatePassword}
       />
+      <PasswordStrengthBar
+        level={passwordStrengthLevel}
+        progress={passwordStrengthPercentage}
+      />
+
+      <View>
+        <ThemedText
+          colorName={
+            passwordStatus.meetsMinPasswordLength
+              ? "passwordStatusCheck"
+              : "text"
+          }
+        >
+          *Password must has minumum 8 characters
+        </ThemedText>
+        <ThemedText
+          colorName={
+            passwordStatus.containsLowercaseLetter
+              ? "passwordStatusCheck"
+              : "text"
+          }
+        >
+          *Password must contain at least 1 Lowercase
+        </ThemedText>
+        <ThemedText
+          colorName={
+            passwordStatus.containsUppercaseLetter
+              ? "passwordStatusCheck"
+              : "text"
+          }
+        >
+          *Password must contain at least 1 Uppercase
+        </ThemedText>
+        <ThemedText
+          colorName={
+            passwordStatus.containsNumericCharacter
+              ? "passwordStatusCheck"
+              : "text"
+          }
+        >
+          *Password must contain at least 1 Numeric character
+        </ThemedText>
+        <ThemedText
+          colorName={
+            passwordStatus.containsNonAlphanumericCharacter
+              ? "passwordStatusCheck"
+              : "text"
+          }
+        >
+          *Password must contain at least 1 non Alpha Numeric character
+        </ThemedText>
+      </View>
       <ThemedButton
         useGradient
         gradientLightColor={["#FFFFFF", "#bcf7f7"]}
