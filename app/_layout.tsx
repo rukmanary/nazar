@@ -4,7 +4,7 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack, useRouter } from "expo-router";
+import { Stack, useRouter, usePathname } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
@@ -19,12 +19,13 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const router = useRouter();
+  const pathname = usePathname();
+
   const colorScheme = useColorScheme();
   const [fontsLoaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
   });
   const [isAppReady, setAppReady] = useState(false);
-
   useEffect(() => {
     const checkAuthAndNavigate = async () => {
       // Tunggu hingga font selesai dimuat
@@ -32,7 +33,8 @@ export default function RootLayout() {
 
       // Periksa status login pengguna
       onAuthStateChanged(auth, (user) => {
-        if (user) {
+        console.log({ user });
+        if (user && pathname === "/signin") {
           // Jika sudah login, arahkan ke dashboard
           router.replace("/");
         } else {
